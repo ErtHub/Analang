@@ -13,7 +13,7 @@ Source::Source(const string& fnam): fn(fnam)
   }
   cout<<"\nInterpreter Analang, v0.1, zadne prawa niezastrze¿one\n";
   cout<<((options&NOLIST)?"Skrócony":"Pe³ny");
-  cout<<" raport kompilacji dla pliku: \""<<fnam<<"\"\n\n";
+  cout<<" raport wykonania dla pliku: \""<<fnam<<"\"\n\n";
   etotal = 0;
   NextLine();   // Pierwszy wiersz
 }
