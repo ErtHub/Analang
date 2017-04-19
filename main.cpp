@@ -26,8 +26,11 @@ int main()
 		case fracsy: {cout << "fracsy"; break; }
 		case strsy: {cout << "strsy"; break; }
 		case boolsy: {cout << "boolsy"; break; }
+		case truesy: {cout << "truesy"; break; }
+		case falsesy: {cout << "falsesy"; break; }
 		case varsy: {cout << "varsy"; break; }
 		case elsesy: {cout << "elsesy"; break; }
+		case returnsy: {cout << "returnsy"; break; }
 		case inputsy: {cout << "inputsy"; break; }
 		case whilesy: {cout << "whilesy"; break; }
 		case printsy: {cout << "printsy"; break; }

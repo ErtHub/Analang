@@ -8,7 +8,7 @@
 char *AT[MAXSYM+1] =	// Tabela Atomów (dla komunikatów o b³êdach
 {
   "if",    "nothing",     "frac",    "str",  "bool",
-  "var",    "else", "true", "false", "input",
+  "var",    "else", "return", "true", "false", "input",
   "while",  "print", "func",
   "ident", "fracconst","strconst",
 
@@ -20,19 +20,20 @@ Scan::KeyRec Scan::KT[NKEYS]= 	// Kolejnoœæ wg funkcji hash(keyword)
 {
 // Keyword		 Atom			hash(keyword)
 //-------------------------------------------
-  { "input",       inputsy  }, 	//  0
-  { "func",     funcsy},  //  1
-  { "print",        printsy   },  //  2
-  { "frac",     fracsy},  //  3
-  { "str",       strsy  },  //  4
-  { "true", truesy },  //  5
-  { "var",        varsy   },  //  6
-  { "while",       whilesy  },  //  7
-  { "else",        elsesy   },  //  8
-  { "false",     falsesy},  //  9
-  { "nothing",       nothingsy  },  //  10
-  { "if",      ifsy },		//11
-  {"bool",     boolsy }     //12
+  { "bool",       boolsy  }, 	//  0
+  { "nothing",     nothingsy},  //  1
+  { "return",        returnsy   },  //  2
+  { "true",     truesy},  //  3
+  { "var",       varsy  },  //  4
+  { "func", funcsy },  //  5
+  { "input",        inputsy   },  //  6
+  { "false",       falsesy  },  //  7
+  { "print",        printsy   },  //  8
+  { "else",     elsesy },  //  9
+  { "str",       strsy  },  //  10
+  { "while",      whilesy },		//11
+  { "if",     ifsy },      //12
+  { "frac",      fracsy }      //13
 };
 
 SymType Scan::NextSymbol()
