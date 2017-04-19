@@ -1,8 +1,11 @@
 #include <iostream>
 #include <cstdlib>
 #include "Scan.h"
+#include "Source.h"
 
 using namespace std;
+
+int options = 0;
 
 int main()
 {
@@ -18,38 +21,39 @@ int main()
 		symbol = scn.NextSymbol();
 		switch (symbol)
 		{
-		case ifsy: cout << "ifsy";
-			case nothingsy: cout << "nothingsy";
-			case fracsy: cout << "fracsy";
-			case strsy: cout << "strsy";
-			case boolsy: cout << "boolsy";
-			case varsy: cout << "varsy";
-			case elsesy: cout << "elsesy";
-			case inputsy: cout << "inputsy";
-			case whilesy: cout << "whilesy";
-			case printsy: cout << "printsy";
-			case funcsy: cout << "funcsy";
-			case ident: cout << "identsy";
-			case fracconst: cout << "fracconst";
-			case strconst: cout << "strconst";
-			case mulop: cout << "mulop";
-			case addop: cout << "addop";
-			case subop: cout << "subop";
-			case orop: cout << "orop";
-			case andop: cout << "andop";
-			case divop: cout << "divop";
-			case endsy: cout << "endsy";
-			case notop: cout << "notop";
-			case beginsy: cout << "beginsy";
-			case ltop: cout << "ltop";
-			case gtop: cout << "gtop";
-			case eqop: cout << "eqop";
-			case rparent: cout << "rparent";
-			case lparent: cout << "lparent";
-			case comma: cout << "comma";
-			case period: cout << "period";
-			case colon: cout << "colon";
-			default: cout << "Koniec pliku lub nieobs³ugiwany atom.";
+		case ifsy: {cout << "ifsy"; break; }
+		case nothingsy: {cout << "nothingsy"; break; }
+		case fracsy: {cout << "fracsy"; break; }
+		case strsy: {cout << "strsy"; break; }
+		case boolsy: {cout << "boolsy"; break; }
+		case varsy: {cout << "varsy"; break; }
+		case elsesy: {cout << "elsesy"; break; }
+		case inputsy: {cout << "inputsy"; break; }
+		case whilesy: {cout << "whilesy"; break; }
+		case printsy: {cout << "printsy"; break; }
+		case funcsy: {cout << "funcsy"; break; }
+		case ident: {cout << "identsy"; break; }
+		case fracconst: {cout << "fracconst"; break; }
+		case strconst: {cout << "strconst"; break; }
+		case mulop: {cout << "mulop"; break; }
+		case addop: {cout << "addop"; break; }
+		case subop: {cout << "subop"; break; }
+		case orop: {cout << "orop"; break; }
+		case andop: {cout << "andop"; break; }
+		case divop: {cout << "divop"; break; }
+		case endsy: {cout << "endsy"; break; }
+		case notop: {cout << "notop"; break; }
+		case beginsy: {cout << "beginsy"; break; }
+		case ltop: {cout << "ltop"; break; }
+		case gtop: {cout << "gtop"; break; }
+		case eqop: {cout << "eqop"; break; }
+		case rparent: {cout << "rparent"; break; }
+		case lparent: {cout << "lparent"; break; }
+		case comma: {cout << "comma"; break; }
+		case period: {cout << "period"; break; }
+		case colon: {cout << "colon"; break; }
+		case becomes: {cout << "becomes"; break; }
+		default: {cout << "Koniec pliku lub nieobs³ugiwany atom."; break; }
 		}
 		cout << endl;
 	} while (symbol != others);

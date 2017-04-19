@@ -37,3 +37,6 @@ Release/
 *.vcxproj
 *.filters
 *.opendb
+
+# Other Artifacts
+*.txt

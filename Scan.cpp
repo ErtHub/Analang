@@ -52,17 +52,19 @@ SymType Scan::NextSymbol()
 				{
 					Nextc();
 					if (c == '/')
+					{
+						Nextc();
 						break;
+					}
 					else
 						continue;
 				}
 				Nextc();
 			}
 		}
-		Nextc();
+		else
+			return divop;
 	}
-	else
-		return divop;
   } while(isspace(c) || c=='/');
 
   atompos=src.GetPos(); // Bêdzie jakiœ atom leksykalny
