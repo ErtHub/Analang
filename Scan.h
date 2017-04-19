@@ -23,7 +23,7 @@ enum SymType	// Atomy leksykalne Analangu
   period,  colon,   becomes,  others, MAXSYM=others+1
 };
 
-enum ScanErrors{ CARCONSTWRONG=1, ICONST2BIG, FCONSTMALFORM };
+enum ScanErrors{ CARCONSTWRONG=1, ICONST2BIG, FCONSTMALFORM, UNTERMCOMM, UNTERMSTRCONST };
 
 class Scan
 {

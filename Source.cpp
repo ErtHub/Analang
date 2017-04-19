@@ -8,7 +8,7 @@ Source::Source(const string& fnam): fn(fnam)
 {
   istr.open(fn.c_str());
   if(!istr)
-  { cout<<"MiniPasc: B£¥D FATALNY - nie mo¿na otworzyæ pliku \""<<fn<<"\"\n";
+  { cout<<"Analang: blad odczytu pliku \""<<fn<<"\"\n";
     exit(1);
   }
   cout<<"\nInterpreter Analang, v0.1, zadne prawa niezastrze¿one\n";

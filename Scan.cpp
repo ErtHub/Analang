@@ -59,6 +59,11 @@ SymType Scan::NextSymbol()
 					else
 						continue;
 				}
+				else if (c == EOF)
+				{
+					ScanError(UNTERMCOMM, "Niezakoñczony komentarz");
+					return others;
+				}
 				Nextc();
 			}
 		}
@@ -153,18 +158,15 @@ SymType Scan::NextSymbol()
 			spell.clear();
 			while (c != '"')
 			{
+				if (c == EOF)
+				{
+					ScanError(UNTERMSTRCONST, "Niezakoñczony ³añcuch znakowy");
+					return others;
+				}
 				spell.push_back(c);
 				Nextc();
 			}
 			Nextc();
-		    /*if(c=='"')
-		    { Nextc();
-		      if(c!='"') ScanError(CARCONSTWRONG, "B³êdna sta³a znakowa");
-		    }
-		    intconstant=c;
-		    Nextc();
-		    if(c!='"') ScanError(CARCONSTWRONG, "B³êdna sta³a znakowa");
-		    else Nextc();*/
 		    return strconst;
     //----Operatory 2 i 1 znakowe
 	case '=': Nextc();
