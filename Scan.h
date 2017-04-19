@@ -11,7 +11,7 @@
 
 enum SymType	// Atomy leksykalne Analangu
 { ifsy, nothingsy, fracsy, strsy, boolsy,
-  varsy,    elsesy,  inputsy,
+  varsy,    elsesy,  truesy, falsesy, inputsy,
   whilesy,  printsy, funcsy,	// Keywords
 
   NKEYS,   MAXKEY=funcsy,
@@ -51,8 +51,10 @@ class Scan
 	  size_t len = s.size();
 	  unsigned short h;
 
-	  if (s == "frac") return 1; // Korekta kolizji
-	  h = (s[0] >> 1) * s[1] * 1721;
+	  if (s == "frac") return 3;
+	  if (s == "str") return 4;
+	  if (s == "while") return 7;// Korekta kolizji
+	  h = (s[0] >> 1) * s[1] * 1840;
 	  if (len >= 3) h += s[len - 1];
 	  return h%NKEYS;
   }
