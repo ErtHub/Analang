@@ -2,19 +2,26 @@
 #include <cstdlib>
 #include "Scan.h"
 #include "Source.h"
+#include "Parser.h"
 
 using namespace std;
+
+int Trace::call_level = 0;
+int Trace::trace_on = 1;
+int Trace::show_symbols = 1;
 
 int options = 0;
 
 int main()
 {
 	string filename;
-	cout << "Nazwa pliku:" << endl;
+	std::cout << "Nazwa pliku:" << endl;
 	cin >> filename;
 	Source src(filename);
 	Scan scn(src);
-	SymType symbol;
+	Parser par(scn);
+	Synchronize::p = &par;
+	/*SymType symbol;
 	//cout << "This program is a stub. Don't expect it to do anything." << endl;
 	do
 	{
@@ -59,7 +66,8 @@ int main()
 		default: {cout << "Koniec pliku lub nieobs³ugiwany atom."; break; }
 		}
 		cout << endl;
-	} while (symbol != others);
+	} while (symbol != others);*/
+	while (par.NextExecutable());
 	system("pause");
 	return 0;
 }
