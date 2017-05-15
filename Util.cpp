@@ -1,10 +1,6 @@
-// Modu³ MP2_UTIL.CPP
-// ==================
-// Defnicje funkcji sk³adowych klasy SymSet.
-//
 #include "Util.h"
 
-extern char *AT[MAXSYM+1]; // Tabela atomów (p. MP_SCAN.CPP)
+extern char *AT[MAXSYM+1];
 //==============
 SymSet::SymSet()					// Zbiór pusty
 { for(int i=0;i<nwords;i++) s[i]=0;

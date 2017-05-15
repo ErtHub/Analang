@@ -1,9 +1,3 @@
-// Modu³ MP2_SCOP.CPP
-// =================
-//
-// Funkcje sk³adowe klas TypRec, IdRec, Scope.
-//
-
 #include "Scope.h"
 #include "Parser.h"
 
@@ -122,10 +116,9 @@ IdRec* Scope::Search(const string& name,
 }
 //====================================
 int Compatible(TypRec *t1, TypRec *t2)  // Zgodnoœæ typów
-{ if(t1==t2 || t1==0 || t2==0) return 1;
-  /*if(t1->kind==Arr && t2->kind==Arr)
-	return ( ((ArrTyp*)t1)->r == ((ArrTyp*)t2)->r) &&
-	 Compatible( ((ArrTyp*)t1)->etyp, ((ArrTyp*)t2)->etyp);*/
+{ 
+  if(t1==t2 || t1==0 || t2==0) return 1;
+
   else return 0;
 }
 //=================

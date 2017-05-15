@@ -1,17 +1,9 @@
-// Modu³ mp2pars.h
-// ===============
-// Definicja klas Parser i Synchronize.
-//
 #ifndef PARSER_H
 #define PARSER_H
 
 #include "Scope.h"
 #include "Scan.h"
 #include "Util.h"
-
-// Parser z akcjami semantycznymi (bez generacji kodu).
-// ====================================================
-//
 
 extern char *AT[];	// Atom Tab - dla komunikatów o b³êdach
 
@@ -65,30 +57,6 @@ class Parser
   void CloseScope();
 
   // FUNKCJE ROZBIORU
-  /*void    Block      (const SymSet& f, const IdRec *blknam);
-  void    VarPart    (const SymSet& f);
-  void    VarDecl    (const SymSet& f);
-  TypRec* Type       (const SymSet& f);
-  TypRec* SimpleType (const SymSet& f);
-  Range   IndexRange (const SymSet& f);
-  void    ProcPart   (const SymSet& f);
-  void    ProcDecl   (const SymSet& f);
-  void    Stmt    	 (const SymSet& f);
-  void    CompStmt   (const SymSet& f);
-  void    IfStmt  	 (const SymSet& f);
-  void    WhileStmt  (const SymSet& f);
-  void    Assignment (const SymSet& f);
-  void    ReadStmt	 (const SymSet& f);
-  TypRec* InputVar   (const SymSet& f);
-  void    WriteStmt  (const SymSet& f);
-  TypRec* OutputValue(const SymSet& f);
-  TypRec* Expression (const SymSet& f);
-  TypRec* SimpleExpr (const SymSet& f);
-  TypRec* Term       (const SymSet& f);
-  TypRec* Factor     (const SymSet& f);
-  TypRec* Variable   (const SymSet& f);*/
-//                                  ^
-// Zbiór nastêpników _______________|
   void StmentBlock(const SymSet& fs);
   void VarDecl(const SymSet&  fs);
   TypRec* Type(const SymSet&  fs);
@@ -111,7 +79,6 @@ class Parser
 public:
   Parser(Scan&);
  ~Parser();
-  //void Program(void);	// G³ówna procedura rozbioru
   bool NextExecutable();
   void SemanticError(int ecode);
 };

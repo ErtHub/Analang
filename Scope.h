@@ -1,8 +1,3 @@
-// Modu³ MP2_SCOP.H
-// ================
-// Definicja klas TypRec, ArrTyp, IdRec i Scope
-// zwi¹zanych z analiz¹ semantyczn¹.
-//
 #ifndef SCOPE_H
 #define SCOPE_H
 
@@ -10,9 +5,9 @@
 #include <list>
 
 enum TypKind{Frac, Bool, Str, Nothing, TYPKINDS };
-extern const char *TK[TYPKINDS]; // Definicja w MP_SCOP.CPP
+extern const char *TK[TYPKINDS];
 
-struct Range			// Zakres indeksów dla tablic
+struct Range
 { int min, max;
   Range(int mi=0, int mx=1){ min=mi; max=mx; }
   friend int operator==(const Range &r1, const Range &r2)
@@ -40,29 +35,6 @@ public:
   friend int Compatible(TypRec *t1,TypRec *t2);
 };
 
-/*class ArrTyp: public TypRec
-{
-  Range r;			// Zakres indeksu
-  TypRec *etyp;	// Typ elementu
-public:
-  ArrTyp(TypRec *et, const Range &rr):
-		 TypRec(Arr), r(rr), etyp(et)
-  { if(etyp) etyp->Link();
-  }
-
- ~ArrTyp()
-  { if(etyp && etyp->Delink()==0) delete etyp; 
-  }
-
-  TypRec* ElementTyp()const { return etyp; }
-
-  void Print()
-  { TypRec::Print();
-	  cout<<r<<" of ";
-	  if(etyp) etyp->Print(); else cout<<"NULL";
-  }
-  friend int Compatible(TypRec *t1, TypRec *t2);
-};*/
 
 // =================================================
 // Definicje dotycz¹ce reprezentacji identyfikatorów

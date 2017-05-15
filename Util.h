@@ -1,9 +1,3 @@
-// Modu³ MP2_UTIL.H
-// ================
-// Definicja klas:
-//     SymSet - operacje mnogoœciowe na zbiorach atomów;
-//     Trace  - do œledzenia wywo³añ procedur rozbioru.
-//
 #ifndef UTIL_H
 #define UTIL_H
 

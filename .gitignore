@@ -32,10 +32,7 @@
 Debug/
 Release/
 .vs/
-*.sln
 *.db
-*.vcxproj
-*.filters
 *.opendb
 
 # Other Artifacts
