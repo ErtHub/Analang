@@ -145,6 +145,8 @@ bool Fraction::equals(Fraction another)
 
 Fraction Fraction::add(Fraction another)
 {
+	if (denom == 0 || another.denom == 0)
+		return Fraction(0, 0, 0, false);
 	long myNom = wholes * denom + nom;
 	long anotherNom = another.wholes * another.denom + another.nom;
 	
@@ -170,6 +172,8 @@ Fraction Fraction::add(Fraction another)
 
 Fraction Fraction::sub(Fraction another)
 {
+	if (denom == 0 || another.denom == 0)
+		return Fraction(0, 0, 0, false);
 	long myNom = wholes * denom + nom;
 	long anotherNom = another.wholes * another.denom + another.nom;
 
@@ -195,19 +199,25 @@ Fraction Fraction::sub(Fraction another)
 
 Fraction Fraction::mul(Fraction another)
 {
+	if (denom == 0 || another.denom == 0)
+		return Fraction(0, 0, 0, false);
 	unsigned long myNom = wholes * denom + nom;
 	unsigned long anotherNom = another.wholes * another.denom + another.nom;
 
 	Fraction toReturn(0, myNom * anotherNom, denom * another.denom, isNegative != another.isNegative);
+	toReturn.normalize();
 	return toReturn;
 }
 
 Fraction Fraction::div(Fraction another)
 {
+	if (denom == 0 || another.denom == 0)
+		return Fraction(0, 0, 0, false);
 	unsigned long myNom = wholes * denom + nom;
 	unsigned long anotherNom = another.wholes * another.denom + another.nom;
 
-	Fraction toReturn(0, myNom * another.denom, denom * another.nom, isNegative != another.isNegative);
+	Fraction toReturn(0, myNom * another.denom, denom * anotherNom, isNegative != another.isNegative);
+	toReturn.normalize();
 	return toReturn;
 }
 
@@ -227,4 +237,6 @@ void Fraction::normalize()
 		nom /= divisor;
 		denom /= divisor;
 	}
+	if (wholes == 0 && nom == 0)
+		isNegative = false;
 }

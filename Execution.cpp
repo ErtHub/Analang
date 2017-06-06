@@ -110,7 +110,7 @@ void Execution::addFunction(int funIdent, shared_ptr<FunctionPrototype> funDef)
 
 void Execution::run()
 {
-	cout << "run" << endl;
+	//cout << "run" << endl;
 	while (!commands.top().empty())
 	{
 		//list<shared_ptr<Executable>>::iterator i;
@@ -287,7 +287,11 @@ void FractionVal::print()
 	if (d == 0)
 		cout << "NaN";
 	else
+	{
+		if (core.getNegative())
+			cout << "-";
 		cout << core.getWholes() << "." << core.getNom() << "_" << d;
+	}
 }
 
 int FractionVal::input()

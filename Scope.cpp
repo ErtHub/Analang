@@ -119,7 +119,7 @@ IdRec* Scope::Search(const string& name,
 //====================================
 int Compatible(TypRec *t1, TypRec *t2)  // Zgodnoœæ typów
 { 
-  if(t1==t2 || t1==0 || t2==0) return 1;
+  if(t1==t2 /*|| t1==0 || t2==0*/) return 1;
 
   else return 0;
 }
