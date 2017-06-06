@@ -8,6 +8,7 @@
 #include <climits>
 #include <cctype>
 #include "Source.h"
+#include "Fraction.h"
 
 enum SymType	// Atomy leksykalne Analangu
 { ifsy, nothingsy, fracsy, strsy, boolsy,
@@ -35,12 +36,7 @@ class Scan
 
   int     c;			    // Aktualny znak z src
   TextPos atompos;	  // Pozycja atomu w tekscie
-  struct frac
-  {
-	  int wholes;
-	  int nom;
-	  int denom;
-  } fracconstant;
+  Fraction fracconstant;
   //int     intconstant;// Wartoûç ostatniej sta≥ej liczbowej
   string  spell;      // Ostatnio wczytany ident
 
@@ -65,7 +61,7 @@ public:
   Scan(Source &s):src(s) { Nextc(); }
   SymType NextSymbol();		// Zwraca nastÍpny atom leksykalny
   //int IntConst() { return intconstant; }
-  struct frac FracConst() { return fracconstant; }
+  Fraction FracConst() { return fracconstant; }
   const string& Spell() { return spell; }
   void ScanError(int ecode, const char *mtxt="", const char *atxt="")
   { src.Error(ecode, atompos, mtxt, atxt); }

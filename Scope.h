@@ -49,10 +49,12 @@ struct IdRec   		// Deskryptor identyfikatora (BDS)
   IdRec   *l, *r; // Lewe i prawe poddrzewa
   std::list<TypRec*> params;
 
+  int uniqueId;
+
   static int IdRecCount;
 
-  IdRec(const string& nam, unsigned k, TypRec *it):
-		name(nam), kind(k), idtyp(it)
+  IdRec(const string& nam, unsigned k, TypRec *it, int id):
+		name(nam), kind(k), idtyp(it), uniqueId(id)
   { if(idtyp) idtyp->Link();
 	  l = r = 0;
   }
@@ -98,6 +100,7 @@ class Scope    // Klasa opisuj¹ca zakres bloku
   Parser &p;        // Powi¹zanie z parserem (obowi¹zkowe)
   Scope *ext;	      // Zakres otaczaj¹cy
   IdRec *root;	    // Korzeñ drzewa nazw lokalnych
+  //static unsigned idBank;
 
 public:
   Scope(const string& sn, Parser &parser, Scope *extscope);

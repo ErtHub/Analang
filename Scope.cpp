@@ -36,8 +36,10 @@ IdRec* Scope::Install(const string& name,
 // w tabeli symboli bie¿¹cego zakresu (wskazanie root).
 //
 { int eq, left;
+static unsigned idBank;
   IdRec *irp, *lastirp;
-  IdRec *irpnew=new IdRec(name, kind, trp);
+  ++idBank;
+  IdRec *irpnew=new IdRec(name, kind, trp, idBank);
 
   if(root==0) return root=irpnew;
 

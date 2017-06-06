@@ -12,14 +12,20 @@ int Trace::show_symbols = 1;
 
 int options = 0;
 
-int main()
+int main(int argc, char* argv[])
 {
-	string filename;
-	std::cout << "Nazwa pliku:" << endl;
-	cin >> filename;
+	if (argc < 2)
+	{
+		cout << "Niewystarczajace argumenty wykonania!" << endl;
+		return -1;
+	}
+	string filename(argv[1]);
+	//std::cout << "Nazwa pliku:" << endl;
+	//cin >> filename;
 	Source src(filename);
 	Scan scn(src);
-	Parser par(scn);
+	Execution e;
+	Parser par(scn, e);
 	Synchronize::p = &par;
 	/*SymType symbol;
 	//cout << "This program is a stub. Don't expect it to do anything." << endl;
@@ -68,6 +74,7 @@ int main()
 		cout << endl;
 	} while (symbol != others);*/
 	while (par.NextExecutable());
+	e.run();
 	system("pause");
 	return 0;
 }

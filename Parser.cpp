@@ -1,5 +1,7 @@
 #include "Parser.h"
 
+using namespace std;
+
 //==================
 void Parser::Nexts()		// Pobranie nastêpnego symbolu
 { 
@@ -39,7 +41,7 @@ void Parser::CloseScope()
 
 
 
-Parser::Parser(Scan& sc): scn(sc), scope(0)
+Parser::Parser(Scan& sc, Execution& e): scn(sc), ex(e), scope(0)
 // Otwiera "GLOBAL" Scope
 {
   Synchronize::p = this;    // Zwi¹zanie z klas¹ Synchronize
@@ -59,9 +61,9 @@ Parser::Parser(Scan& sc): scn(sc), scope(0)
 // Utwórz deskryptory pozorne dla Scope::Search()
 //
 
-  VarDummy = new IdRec("@@VDUMMY", VarId, 0),
-  ConstDummy = new IdRec("@@CDUMMY", ConstId, 0),
-  FuncDummy = new IdRec("@@FDUMMY", FuncId, 0);
+  VarDummy = new IdRec("@@VDUMMY", VarId, 0, 0),
+  ConstDummy = new IdRec("@@CDUMMY", ConstId, 0, 0),
+  FuncDummy = new IdRec("@@FDUMMY", FuncId, 0, 0);
 
   // Utwórz zasiêg globalny nazw
   OpenScope("GLOBAL");
@@ -88,36 +90,53 @@ Parser::~Parser()
 bool Parser::NextExecutable()
 {
 	Trace("NextExecutable", -1);
+	shared_ptr<Executable> nextComm;
+	shared_ptr<Execution::FunctionPrototype> nextFun;
+	int nextFunId;
 	if (ststart.has(symbol))
 	{
-		Stment(ststart + SymSet(funcsy, others, EOS));
+		Stment(ststart + SymSet(funcsy, others, EOS), nextComm);
+		if (!error)
+			ex.addExecutable(nextComm);
+		else
+			error = false;
 		return true;
 	}
 	else if (symbol == funcsy)
 	{
-		FunDecl(ststart + SymSet(funcsy, others, EOS));
+		FunDecl(ststart + SymSet(funcsy, others, EOS), nextFunId, nextFun);
+		if (!error)
+			ex.addFunction(nextFunId, nextFun);
+		else
+			error = false;
 		return true;
 	}
 	return false;
 
 }
 //=========================================================
-void Parser::StmentBlock(const SymSet& fs)
+void Parser::StmentBlock(const SymSet& fs, list<shared_ptr<Executable>>& blk)
 {
 	Trace x("StmentBlock", fs);
 	Synchronize s(beginsy, fs);
+
+	shared_ptr<Executable> nextComm;
 
 	if (!can_parse) return;
 
 	accept(beginsy);
 	while (ststart.has(symbol))
 	{
-		Stment(fs + ststart + endsy);
+		Stment(fs + ststart + endsy, nextComm);
+		if (!error)
+			blk.push_back(nextComm);
+		else
+			error = false;
 	}
 	accept(endsy);
 }
 //============================================
-void Parser::VarDecl(const SymSet&  fs)
+void Parser::VarDecl(const SymSet&  fs, shared_ptr<Executable>& decls)
 {
 	Trace x("VarDecl", fs);
 	Synchronize s(varsy, fs);
@@ -129,18 +148,49 @@ void Parser::VarDecl(const SymSet&  fs)
 	accept(colon);
 
 	TypRec* typ;
+	shared_ptr<Value> initVal;
 	if ((typ = Type(fs + ident)) == nothingtyp)
+	{
 		SemanticError(3);
+		//error = false;
+		//return;
+		initVal = shared_ptr<Value>(new NothingVal());
+	}
+	else if (typ == booltyp)
+		initVal = shared_ptr<Value>(new Boolean(true));
+	else if (typ == fractyp)
+		initVal = shared_ptr<Value>(new FractionVal(Fraction()));
+	else if (typ == strtyp)
+		initVal = shared_ptr<Value>(new StringVal(""));
 
-	irl.Append(scope->Install(scn.Spell(), VarId, NULL));
+	bool nothingError = error;
+	error = false;
+
+	list<int> ids;
+	IdRec* desc = scope->Install(scn.Spell(), VarId, NULL);
+	irl.Append(desc);
+	if (!error)
+		ids.push_back(desc->uniqueId);
+	else
+		error = false;
 	accept(ident);
+
 	while (symbol == comma)
 	{
 		accept(comma);
-		irl.Append(scope->Install(scn.Spell(), VarId, NULL));
+		desc = scope->Install(scn.Spell(), VarId, NULL);
+		irl.Append(desc);
+		if (!error)
+			ids.push_back(desc->uniqueId);
+		else
+			error = false;
 		accept(ident);
+
 	}
 	irl.AddTyp(typ);
+	decls = shared_ptr<Executable>(new VarDeclaration(ids, initVal));
+
+	error = nothingError;
 }
 //============================================
 TypRec* Parser::Type(const SymSet&  fs)
@@ -153,11 +203,11 @@ TypRec* Parser::Type(const SymSet&  fs)
 	case fracsy: accept(fracsy); return fractyp;
 	case boolsy: accept(boolsy); return booltyp;
 	case strsy: accept(strsy); return strtyp;
-	case nothingsy: accept(nothingsy); return nothingtyp;
+	case nothingsy: default: accept(nothingsy); return nothingtyp;
 	}
 }
 //=================================================
-void Parser::FunDecl(const SymSet&  fs)
+void Parser::FunDecl(const SymSet&  fs, int& funId, shared_ptr<Execution::FunctionPrototype>& prot)
 {
 	Trace x("FunDecl", fs);
 	Synchronize s(fs + funcsy, fs);
@@ -166,6 +216,10 @@ void Parser::FunDecl(const SymSet&  fs)
 	string fname = "???";
 	string paramname = "???";
 	IdRec *procidptr;
+	IdRec *paramidptr;
+
+	list<shared_ptr<Executable>> body;
+	list<int> paramList;
 
 	accept(funcsy);
 	accept(colon);
@@ -174,6 +228,10 @@ void Parser::FunDecl(const SymSet&  fs)
 
 	if (symbol == ident) fname = scn.Spell();
 	procidptr = scope->Install(fname, FuncId, typ);
+
+	bool homonymError = error;
+	error = false;
+
 	accept(ident);
 	accept(lparent);
 
@@ -182,65 +240,107 @@ void Parser::FunDecl(const SymSet&  fs)
 	if (types.has(symbol))
 	{
 		TypRec* ptyp = Type(fs + ident);
-		paramname = scn.Spell();
+		if(symbol == ident) paramname = scn.Spell();
+		paramidptr = scope->Install(paramname, VarId, ptyp);
+		if (!error)
+		{
+			procidptr->params.push_back(paramidptr->idtyp);
+			paramList.push_back(paramidptr->uniqueId);
+		}
+		else
+			error = false;
+		paramname = "???";
 		accept(ident);
-		procidptr->params.push_back(scope->Install(paramname, VarId, ptyp)->idtyp);
+		
 
 		while(symbol==comma)
 		{
 			accept(comma);
 			ptyp = Type(fs + ident);
-			paramname = scn.Spell();
+			if (symbol == ident) paramname = scn.Spell();
+			paramidptr = scope->Install(paramname, VarId, ptyp);
+			if (!error)
+			{
+				procidptr->params.push_back(paramidptr->idtyp);
+				paramList.push_back(paramidptr->uniqueId);
+			}
+			else
+				error = false;
+			paramname = "???";
 			accept(ident);
-			procidptr->params.push_back(scope->Install(paramname, VarId, ptyp)->idtyp);
 		}
 
 	}
 	accept(rparent);
 
-	StmentBlock(fs);
+	StmentBlock(fs, body);
+
+	funId = procidptr->uniqueId;
+	prot = shared_ptr<Execution::FunctionPrototype>(new Execution::FunctionPrototype(body, paramList));
 
 	CloseScope();
 	expectedreturn = nothingtyp;
+	error = homonymError;
 }
 
-TypRec* Parser::FunCall(const SymSet& fs)
+TypRec* Parser::FunCall(const SymSet& fs, shared_ptr<FunctionCall>& callComm)
 {
 	Trace x("FunCall", fs);
 	Synchronize s(ident, fs);
 
+	string funName = scn.Spell();
 	if (!can_parse) return NULL;
-	IdRec *funid = scope->Search(scn.Spell(), FuncId);
-	std::list<TypRec*> ptyps;
+	IdRec *funid = scope->Search(funName, FuncId);
+	list<TypRec*> ptyps;
+	list<shared_ptr<Evaluable>> callParams;
+	shared_ptr<Evaluable> currParam;
+	TypRec* paramTyp;
 	accept(ident);
 	accept(lparent);
 	if (symbol != rparent)
 	{
-		ptyps.push_back(Expr(fs + SymSet(comma, rparent, EOS)));
+		paramTyp = (Expr(fs + SymSet(comma, rparent, EOS), currParam));
+		ptyps.push_back(paramTyp);
+		callParams.push_back(currParam);
 		while (symbol == comma)
 		{
 			accept(comma);
-			ptyps.push_back(Expr(fs + SymSet(comma, rparent, EOS)));
+			paramTyp = (Expr(fs + SymSet(comma, rparent, EOS), currParam));
+			ptyps.push_back(paramTyp);
+			callParams.push_back(currParam);
 		}
 	}
-	if (ptyps != funid->params)
+	else if (ptyps != funid->params)
 		SemanticError(5);
+	shared_ptr<Value> defaultRet;
+	if (funid->idtyp == nothingtyp)
+		defaultRet = shared_ptr<Value>(new NothingVal());
+	else if (funid->idtyp == booltyp)
+		defaultRet = shared_ptr<Value>(new Boolean(true));
+	else if (funid->idtyp == fractyp)
+		defaultRet = shared_ptr<Value>(new FractionVal(Fraction()));
+	else if (funid->idtyp == strtyp)
+		defaultRet = shared_ptr<Value>(new StringVal(""));
+	callComm = shared_ptr<FunctionCall>(new FunctionCall(funid->uniqueId, callParams, defaultRet));
 	accept(rparent);
+	return funid->idtyp;
 }
 
-void Parser::Return(const SymSet& fs)
+void Parser::Return(const SymSet& fs, shared_ptr<Executable>& ret)
 {
 	Trace x("Return", fs);
 	Synchronize s(returnsy, fs);
 	if (expectedreturn == nothingtyp)
 		SemanticError(14);
 	accept(returnsy);
-	TypRec* etyp = Expr(fs);
+	shared_ptr<Evaluable> val;
+	TypRec* etyp = Expr(fs, val);
 	if (!Compatible(etyp, expectedreturn))
 		SemanticError(15);
+	ret = shared_ptr<Executable>(new ReturnEx(val));
 }
 //=========================================
-void Parser::Stment(const SymSet&  fs)
+void Parser::Stment(const SymSet&  fs, shared_ptr<Executable>& st)
 {
 	Trace x("Stment", fs);
 	Synchronize s(ststart, fs);
@@ -250,12 +350,12 @@ void Parser::Stment(const SymSet&  fs)
 	{
 		IdRec *irp;
 
-	case ifsy:	  Cond(fs);	   break;
-	case whilesy: Loop(fs); break;
-	case inputsy:  InputStment(fs);  break;
-	case printsy: PrintStment(fs); break;
-	case returnsy: Return(fs); break;
-	case varsy: VarDecl(fs); break;
+	case ifsy:	  Cond(fs, st);	   break;
+	case whilesy: Loop(fs, st); break;
+	case inputsy:  InputStment(fs, st);  break;
+	case printsy: PrintStment(fs, st); break;
+	case returnsy: Return(fs, st); break;
+	case varsy: VarDecl(fs, st); break;
 
 	case ident:
 		// Mo¿e byæ wywo³anie procedury albo przypisanie.
@@ -263,148 +363,217 @@ void Parser::Stment(const SymSet&  fs)
 
 		irp = scope->Search(scn.Spell(), (VarId | FuncId));
 		if (irp->kind == VarId)
-			Assignment(fs);
+			Assignment(fs, st);
 		else
-			FunCall(fs);
+		{
+			shared_ptr<FunctionCall> c;
+			FunCall(fs, c);
+			st = static_pointer_cast<Executable>(c);
+		}
 	}
 }
 //=============================================
-void Parser::Cond(const SymSet&  fs)
+void Parser::Cond(const SymSet&  fs, shared_ptr<Executable>& cond)
 {
 	Trace t("Cond", -1);
 	TypRec *etyp;
 
+	shared_ptr<Evaluable> condExpr;
+	list<shared_ptr<Executable>> onTrue;
+	list<shared_ptr<Executable>> onFalse;
+
 	accept(ifsy);
 	accept(lparent);
-	etyp = Expr(fs + rparent);
+	etyp = Expr(fs + rparent, condExpr);
 	if (!Compatible(etyp, booltyp)) SemanticError(12);
+	bool condError = error;
+	error = false;
 	accept(rparent);
 	OpenScope("CondIf");
-	StmentBlock(fs + elsesy);
+	StmentBlock(fs + elsesy, onTrue);
 	CloseScope();
 	if (symbol == elsesy)
 	{
 		accept(elsesy);
 		OpenScope("CondElse");
-		StmentBlock(fs);
+		StmentBlock(fs, onFalse);
 		CloseScope();
 	}
+	cond = shared_ptr<Executable>(new Conditional(condExpr, onTrue, onFalse));
+	error = condError;
 }
 //==============================================
-void Parser::Loop(const SymSet&  fs)
+void Parser::Loop(const SymSet&  fs, shared_ptr<Executable>& lp)
 {
 	Trace t("Loop", -1);
 	TypRec *etyp;
 
+	shared_ptr<Evaluable> condExpr;
+	list<shared_ptr<Executable>> onLoop;
+
 	accept(whilesy);
 	accept(lparent);
-	etyp = Expr(fs + rparent);
+	etyp = Expr(fs + rparent, condExpr);
 	if (!Compatible(etyp, booltyp)) SemanticError(12);
+	bool loopError = error;
+	error = false;
 	accept(rparent);
 	OpenScope("Loop");
-	StmentBlock(fs);
+	StmentBlock(fs, onLoop);
 	CloseScope();
+	lp = shared_ptr<Executable>(new Looped(condExpr, onLoop));
+	error = loopError;
 }
 //===============================================
-void Parser::Assignment(const SymSet&  fs)
+void Parser::Assignment(const SymSet&  fs, shared_ptr<Executable>& assgn)
 {
 	Trace t("Assignment", -1);
 	TypRec *vtyp, *etyp;
 
-	vtyp = Variable(fs + becomes);
+	shared_ptr<Evaluable> var;
+	shared_ptr<Evaluable> val;
+
+	vtyp = Variable(fs + becomes, var);
 	accept(becomes);
-	etyp = Expr(fs);
+	etyp = Expr(fs, val);
 	if (!Compatible(vtyp, etyp))
 		SemanticError(9);		// Zmienna i wyra¿enie niezgodne
+	assgn = shared_ptr<Executable>(new AssignmentEx(static_pointer_cast<VariableEx>(var)->getIdent(), val));
 }
 //=============================================
-void Parser::InputStment(const SymSet&  fs)
+void Parser::InputStment(const SymSet&  fs, shared_ptr<Executable>& inp)
 {
 	Trace t("InputStment", -1);
-
+	shared_ptr<Evaluable> var;
+	list<int> varIds;
 	accept(inputsy);
 	accept(lparent);
-	if (Variable(fs + SymSet(comma, rparent, EOS)) == nothingtyp)
+	if (Variable(fs + SymSet(comma, rparent, EOS), var) == nothingtyp)
 		SemanticError(3);
+	varIds.push_back(static_pointer_cast<VariableEx>(var)->getIdent());
 	while (symbol == comma)
 	{
 		accept(comma);
-		if (Variable(fs + SymSet(comma, rparent, EOS)) == nothingtyp)
+		if (Variable(fs + SymSet(comma, rparent, EOS), var) == nothingtyp)
 			SemanticError(3);
+		varIds.push_back(static_pointer_cast<VariableEx>(var)->getIdent());
 	}
 	accept(rparent);
+	inp = shared_ptr<Executable>(new InputEx(varIds));
 }
 //================================================
-void Parser::PrintStment(const SymSet&  fs)
+void Parser::PrintStment(const SymSet&  fs, shared_ptr<Executable>& prt)
 { // Synchronizacja w procedurze Stmt()
 	Trace t("PrintStment", -1);
 
-	// WriteStment	= "write" '('OutValue {',' OutValue } ')' ;
+	shared_ptr<Evaluable> eval;
+	list<shared_ptr<Evaluable>> toPrint;
 
 	accept(printsy);
 	accept(lparent);
-	if (Expr(fs + SymSet(comma, rparent, EOS)) == nothingtyp)
-		SemanticError(4);//TODO: rowniez kontrola przeciwko typowi nothing
+	if (Expr(fs + SymSet(comma, rparent, EOS), eval) == nothingtyp)
+		SemanticError(4);
+	toPrint.push_back(eval);
 	while (symbol == comma)
 	{
 		accept(comma);
-		if (Expr(fs + SymSet(comma, rparent, EOS)) == nothingtyp)
-			SemanticError(4);//ibidem
+		if (Expr(fs + SymSet(comma, rparent, EOS), eval) == nothingtyp)
+			SemanticError(4);
+		toPrint.push_back(eval);
 	}
 	accept(rparent);
+	prt = shared_ptr<Executable>(new PrintEx(toPrint));
 }
 //===================================================
-TypRec* Parser::Expr(const SymSet&  fs)
+TypRec* Parser::Expr(const SymSet&  fs, shared_ptr<Evaluable>& xpr)
 {
 	Trace t("Expr", -1);
 	TypRec *et, *et1;
 
-	et = MedPrioExpr(fs + relops);
+	et = MedPrioExpr(fs + relops, xpr);
 	if (relops.has(symbol))
 	{
+		SymType compKind = symbol;
+		shared_ptr<Evaluable> otherXpr;
 		et1 = et;
 		Nexts();
-		et = MedPrioExpr(fs);
-		if (!((Compatible(et1, fractyp) && Compatible(et, fractyp)) ||
-			(Compatible(et1, strtyp) && Compatible(et, strtyp))))
+		et = MedPrioExpr(fs, otherXpr);
+		//if (!((Compatible(et1, fractyp) && Compatible(et, fractyp)) ||
+			//(Compatible(et1, strtyp) && Compatible(et, strtyp))))//TODO: Do something about this!
+			//SemanticError(8);
+		if (Compatible(et1, fractyp) && Compatible(et, fractyp))
+		{
+			if (compKind == ltop)
+				xpr = shared_ptr<Evaluable>(new LesserThan(xpr, otherXpr));
+			else if (compKind == gtop)
+				xpr = shared_ptr<Evaluable>(new GreaterThan(xpr, otherXpr));
+			else if (compKind == eqop)
+				xpr = shared_ptr<Evaluable>(new Equal(xpr, otherXpr));
+		}
+		else if (Compatible(et1, strtyp) && Compatible(et, strtyp))
+		{
+			if (compKind == ltop)
+				xpr = shared_ptr<Evaluable>(new LexicalLesser(xpr, otherXpr));
+			else if (compKind == gtop)
+				xpr = shared_ptr<Evaluable>(new LexicalGreater(xpr, otherXpr));
+			else if (compKind == eqop)
+				xpr = shared_ptr<Evaluable>(new LexicalEqual(xpr, otherXpr));
+		}
+		else
 			SemanticError(8);
 		et = booltyp;
 	}
 	return et;
 }
 //==================================================
-TypRec* Parser::MedPrioExpr(const SymSet&  fs)
+TypRec* Parser::MedPrioExpr(const SymSet&  fs, shared_ptr<Evaluable>& xpr)
 {
 	Trace x("MedPrioExpr", fs);
 	Synchronize s(factstart + signs, fs);
 	TypRec *termtyp, *exptyp;
 	int     signum = 0;
 	SymType op;
+	SymType sign;
 
 	if (!can_parse) return 0;
 
-	if (signs.has(symbol)) { Nexts(); signum = 1; }
-	exptyp = HiPrioExpr(fs + addops);
-	if (signum && !Compatible(exptyp, fractyp))
-		SemanticError(7);
+	if (signs.has(symbol)) { sign = symbol; Nexts(); signum = 1; }
+	exptyp = HiPrioExpr(fs + addops, xpr);
+	//if (signum && !Compatible(exptyp, fractyp))
+		//SemanticError(7);
+	if(signum)
+	{
+		if (!Compatible(exptyp, fractyp))
+			SemanticError(7);
+		if (sign == subop)
+			xpr = shared_ptr<Evaluable>(new ArithNegation(xpr));
+	}
 
 	while (addops.has(symbol))
 	{
+		shared_ptr<Evaluable> otherXpr;
 		termtyp = exptyp;
 		op = symbol;
 		Nexts();
-		exptyp = HiPrioExpr(fs + addops);
+		exptyp = HiPrioExpr(fs + addops, otherXpr);
 		switch (op)
 		{
-		case addop:
+		case addop: if (!Compatible(termtyp, fractyp) ||
+			!Compatible(exptyp, fractyp))
+			SemanticError(7);
+			xpr = shared_ptr<Evaluable>(new AddOp(xpr, otherXpr));
+			exptyp = fractyp;
+			break;
 		case subop: if (!Compatible(termtyp, fractyp) ||
 			!Compatible(exptyp, fractyp))
 			SemanticError(7);
+			xpr = shared_ptr<Evaluable>(new SubOp(xpr, otherXpr));
 			exptyp = fractyp;
 			break;
 		case orop: if (!Compatible(termtyp, booltyp) ||
 			!Compatible(exptyp, booltyp))
 			SemanticError(6);
+			xpr = shared_ptr<Evaluable>(new OrOp(xpr, otherXpr));
 			exptyp = booltyp;
 			break;
 		}
@@ -412,33 +581,42 @@ TypRec* Parser::MedPrioExpr(const SymSet&  fs)
 	return exptyp;
 }
 //============================================
-TypRec* Parser::HiPrioExpr(const SymSet&  fs)
+TypRec* Parser::HiPrioExpr(const SymSet&  fs, shared_ptr<Evaluable>& xpr)
 {
 	Trace t("HiPrioExpr", -1);
 	TypRec *facttyp, *exptyp;
 	SymType op;
 
-	exptyp = AtomExpr(fs + factiter);
+	exptyp = AtomExpr(fs + factiter, xpr);
 
-	while (factiter.has(symbol))
+	while (mulops.has(symbol))
 	{
+		shared_ptr<Evaluable> otherXpr;
 		facttyp = exptyp;
 		op = symbol;
-		if (mulops.has(symbol)) Nexts();
-		else SyntaxError(mulop);
-		exptyp = AtomExpr(fs + factiter);
+		Nexts();
+		//if (mulops.has(symbol)) Nexts();
+		//else SyntaxError(mulop);
+		exptyp = AtomExpr(fs + factiter, otherXpr);
 		if (mulops.has(op))
 			switch (op)
 			{
-			case mulop:
+			case mulop: if (!Compatible(facttyp, fractyp) ||
+				!Compatible(exptyp, fractyp))
+				SemanticError(7);
+				xpr = shared_ptr<Evaluable>(new MulOp(xpr, otherXpr));
+				exptyp = fractyp;
+				break;
 			case divop: if (!Compatible(facttyp, fractyp) ||
 				!Compatible(exptyp, fractyp))
 				SemanticError(7);
+				xpr = shared_ptr<Evaluable>(new DivOp(xpr, otherXpr));
 				exptyp = fractyp;
 				break;
 			case andop: if (!Compatible(facttyp, booltyp) ||
 				!Compatible(exptyp, booltyp))
 				SemanticError(6);
+				xpr = shared_ptr<Evaluable>(new AndOp(xpr, otherXpr));
 				exptyp = booltyp;
 				break;
 			}
@@ -447,7 +625,7 @@ TypRec* Parser::HiPrioExpr(const SymSet&  fs)
 	return exptyp;
 }
 //==============================================
-TypRec* Parser::AtomExpr(const SymSet&  fs)
+TypRec* Parser::AtomExpr(const SymSet&  fs, shared_ptr<Evaluable>& xpr)
 {
 	Trace x("AtomExpr", fs);
 	Synchronize s(factstart, fs);
@@ -455,6 +633,7 @@ TypRec* Parser::AtomExpr(const SymSet&  fs)
 
 	IdRec  *irp;
 	TypRec *trp;
+	TypRec *toReturn;
 
 	switch (symbol)
 	{
@@ -466,36 +645,54 @@ TypRec* Parser::AtomExpr(const SymSet&  fs)
 		}
 		else if (irp->kind == FuncId)
 		{
-			return FunCall(fs);
+			shared_ptr<FunctionCall> c;
+			toReturn = FunCall(fs, c);
+			xpr = static_pointer_cast<Evaluable>(c);
+			return toReturn;
 		}
-		else return Variable(fs);
+		else return Variable(fs, xpr);
 
-	case fracconst: accept(fracconst);  return fractyp;
-	case strconst:accept(strconst); return strtyp;
-	case truesy: case falsesy: return booltyp;
+	case fracconst:
+		xpr = shared_ptr<Evaluable>(new FractionVal(scn.FracConst()));
+		accept(fracconst);
+		return fractyp;
+	case strconst:
+		xpr = shared_ptr<Evaluable>(new StringVal(scn.Spell()));
+		accept(strconst);
+		return strtyp;
+	case truesy:
+		xpr = shared_ptr<Evaluable>(new Boolean(true));
+		return booltyp;
+	case falsesy:
+		xpr = shared_ptr<Evaluable>(new Boolean(false));
+		return booltyp;
 	case lparent:  accept(lparent);
-		trp = Expr(fs + rparent);
+		trp = Expr(fs + rparent, xpr);
 		accept(rparent);
 		return trp;
 	case notop:    accept(notop);
-		trp = AtomExpr(fs);
+		trp = AtomExpr(fs, xpr);
 		if (!Compatible(trp, booltyp))
 			SemanticError(6);
+		xpr = shared_ptr<Evaluable>(new Negation(xpr));
 		return booltyp;
 	default:	   return 0;
 
 	}
 }
 //================================================
-TypRec* Parser::Variable(const SymSet&  fs)
+TypRec* Parser::Variable(const SymSet&  fs, shared_ptr<Evaluable>& v)
 {
 	Trace x("Variable", fs);
 	Synchronize s(ident, fs);
 	if (!can_parse) return NULL;
 
 	TypRec *vartyp;
+	IdRec* desc;
 
-	vartyp = (scope->Search(scn.Spell(), VarId))->idtyp;
+	desc = scope->Search(scn.Spell(), VarId);
+	vartyp = desc->idtyp;
+	v = shared_ptr<Evaluable>(new VariableEx(desc->uniqueId));
 	accept(ident);
 	return vartyp;
 }
@@ -520,6 +717,8 @@ void Parser::SemanticError(int ecode)
 	  "Nie oczekiwano zwrocenia zadnej wartosci w tym zakresie",  //14
 	  "Wartosc zwracana ma niepoprawny typ"    //15
   };
+
+  error = true;
 
   scn.ScanError(FirstSemanticError + ecode, SemErr[ecode]);
 }

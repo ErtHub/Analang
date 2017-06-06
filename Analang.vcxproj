@@ -97,19 +97,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Evaluable.cpp" />
+    <ClCompile Include="Executable.cpp" />
+    <ClCompile Include="Execution.cpp" />
+    <ClCompile Include="Fraction.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="Scope.cpp" />
     <ClCompile Include="Scan.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Value.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Evaluable.h" />
+    <ClInclude Include="Executable.h" />
+    <ClInclude Include="Execution.h" />
+    <ClInclude Include="Fraction.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Scope.h" />
     <ClInclude Include="Scan.h" />
     <ClInclude Include="Source.h" />
+    <ClInclude Include="Value.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

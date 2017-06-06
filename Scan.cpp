@@ -99,6 +99,7 @@ SymType Scan::NextSymbol()
   {
 	bool pointSeen = false;
 	bool underscoreSeen = false;
+	unsigned wholes = 0, nom = 0, denom = 1;
 	do
 	{
 		bool big = false; unsigned long long ul = 0;
@@ -113,39 +114,55 @@ SymType Scan::NextSymbol()
 		if (c == '.' && !pointSeen)
 		{
 			if (underscoreSeen)
+			{
 				ScanError(FCONSTMALFORM, "Niepoprawny format sta³ej u³amkowej");
+				fracconstant = Fraction(0, 0, 0, false);
+			}
 			else
 			{
 				pointSeen = true;
-				fracconstant.wholes = ul;
+				wholes = ul;
 				Nextc();
 				if (!isdigit(c))
+				{
 					ScanError(FCONSTMALFORM, "Niepoprawny format sta³ej u³amkowej");
+					fracconstant = Fraction(0, 0, 0, false);
+				}
 			}
 		}
 		else if (c == '_' && !underscoreSeen)
 		{
 			underscoreSeen = true;
-			fracconstant.nom = ul;
+			nom = ul;
 			Nextc();
 			if (!isdigit(c))
+			{
 				ScanError(FCONSTMALFORM, "Niepoprawny format sta³ej u³amkowej");
+				fracconstant = Fraction(0, 0, 0, false);
+			}
 		}
 		else
 		{
 			if (underscoreSeen)
 			{
 				if (!pointSeen)
-					fracconstant.wholes = 0;
-				fracconstant.denom = ul;
+					wholes = 0;
+				denom = ul;
+				fracconstant = Fraction(wholes, nom, denom, false);
 			}
 			else if (!underscoreSeen && !pointSeen)
 			{
-				fracconstant.wholes = ul;
-				fracconstant.nom = fracconstant.denom = 1;
+				wholes = ul;
+				nom = 0;
+				denom = 1;
+				fracconstant = Fraction(wholes, nom, denom, false);
 			}
 			else
+			{
 				ScanError(FCONSTMALFORM, "Niepoprawny format sta³ej u³amkowej");
+				fracconstant = Fraction(0, 0, 0, false);
+			}
+			fracconstant.normalize();
 			return fracconst;
 		}
 		//intconstant = (int)ul;
